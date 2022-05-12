@@ -18,11 +18,11 @@ if (!file.exists(resultFolder)) {
 }
 
 # fill NA irregular plot
-irr_plot <- c("W1-036", "W1-085", "W1-115", "W1-129",
+irr_plot <- c("W1-036", "W1-073", "W1-085", "W1-115", "W1-129",
               "W2-005", "W2-038", "W2-099", "W2-149", "W2-051",
-              "W3-014", "W3-036", "W3-093",
-              "W4-004", "W4-071", "W4-074", "W4-075", "W4-150", "W4-182", "W4-184")
-
+              "W3-014", "W3-036", "W3-080", "W3-093", "W3-114", 
+              "W4-004", "W4-071", "W4-074", "W4-075", "W4-150", "W4-182", "W4-184", 
+              "W4-009", "W4-143", "W4-034", "W4-042", "W4-109")
 
 # read the plant area
 plantAreaAll0 <- read.csv("2019_M100_Xacti4eyeCamera_Images/plantArea/allPlantArea.csv", 
@@ -39,12 +39,11 @@ plantPhenotype <- plantPhenotype[start_W:dim(plantPhenotype)[1], ]
 plotNumber <- paste0(plantPhenotype$block, "-", formatC(plantPhenotype$plot, width = 3, flag = "0"))
 plantPhenotype <- cbind(plantPhenotype, plotNumber)
 
-dryLeaves <- aggregate(DryWeight_Leaves_g~plotNumber, data = plantPhenotype, FUN = mean)
+# dryLeaves <- aggregate(DryWeight_Leaves_g~plotNumber, data = plantPhenotype, FUN = mean)
 dryShoot <- aggregate(DryWeight_Shoot_g~plotNumber, data = plantPhenotype, FUN = mean)
-
-dryLeavesInd <- match(x = rownames(plantAreaAll), table = dryLeaves$plotNumber)
+# dryLeavesInd <- match(x = rownames(plantAreaAll), table = dryLeaves$plotNumber)
 dryShootInd <- match(x = rownames(plantAreaAll), table = dryShoot$plotNumber)
-dryWeight0 <- dryLeaves[dryLeavesInd, "DryWeight_Leaves_g"] + dryShoot[dryShootInd, "DryWeight_Shoot_g"]
+dryWeight0 <- dryShoot[dryShootInd, "DryWeight_Shoot_g"]
 
 dryWeight <- matrix(NA, nrow = nrow(plantAreaAll), ncol = 1)
 rownames(dryWeight) <- rownames(plantAreaAll)
@@ -93,7 +92,8 @@ flowerDay <- flowerDay0[, c("variety", "block", "FloweringDate")]
 flowerDate <- FlowerDataAsDate(flowerDate = flowerDay)
 rownames(flowerDate) <- rownames(plantAreaAll)
 dayInd <- as.Date(c("2019-08-02", "2019-08-10", "2019-08-17", 
-                    "2019-08-24", "2019-08-31", "2019-09-03"))
+                    "2019-08-24", "2019-08-31", "2019-09-03", 
+                    "2019-09-11"))
 
 flowerDateList <- lapply(dayInd, function(eachDayInd) {
   # eachDayInd <- dayInd[1]
@@ -105,7 +105,6 @@ flowerDateList <- lapply(dayInd, function(eachDayInd) {
   return(flowerOrNot)
 })
 
-# data day split to the 7 group
 data_day <- c("0802", "0810", "0817", "0824", "0831", "0903")
 day1Df <- cbind(flower = flowerDateList[[1]], 
                 eachDayDfList[[1]])
@@ -138,6 +137,35 @@ lapply(allDayList, function(eachDayList) {
   
 })
 
+# percentage of flowering or not in each measurement day and each treatment
+flowerRateList <- lapply(allDayList, function(eachDayList) {
+  # eachDayList <- allDayList[[1]]
+  eachDayDfAll <- cbind(plantAreaAll[, 1:3], eachDayList$df)
+  eachDayDfAll <- na.omit(eachDayDfAll)
+  flowerRateEach <- tapply(eachDayDfAll$flower, eachDayDfAll$treatment, function(eachTre) {
+    (length(eachTre) - sum(eachTre)) / length(eachTre)
+  })
+  flowerRateAll <- (length(eachDayDfAll$flower) - sum(eachDayDfAll$flower)) / length(eachDayDfAll$flower)
+  flowerRate <- c(flowerRateAll, flowerRateEach)
+  return(flowerRate)
+})
+flowerRateMat0 <- do.call(what = rbind, flowerRateList)
+
+# add the destructive measurement
+lastFlower <- flowerDateList[[length(flowerDateList)]]
+ind <- rep(c("C", "W5", "W10", "D"), each = 200)
+flowerRateEach <- tapply(lastFlower, ind, function(eachTre) {
+  (length(eachTre) - sum(eachTre)) / length(eachTre)
+})
+flowerRateAll <- (length(lastFlower) - sum(lastFlower)) / length(lastFlower)
+flowerRate <- c(flowerRateAll, flowerRateEach)
+
+flowerRateMat <- rbind(flowerRateMat0, flowerRate)
+flowerRateMat <- round(flowerRateMat, 2)
+rownames(flowerRateMat) <- c(dataWeek, "Destructive")
+colnames(flowerRateMat) <- c("All", "C", "W5", "W10", "D")
+write.csv(flowerRateMat, paste0(resultFolder, "/floweringRate.csv"))
+
 ########### visualize flowering time###########
 sowingDay <- as.Date("2019-07-10")
 measuringDay <- as.Date(c("2019-08-02", "2019-08-10", "2019-08-17", 
@@ -162,3 +190,4 @@ png(paste0(resultFolder, "/floweringDay.png"),
     height = 1440, width = 1440, res = 216)
 print(g)
 dev.off()
+

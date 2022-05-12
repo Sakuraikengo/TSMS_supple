@@ -1,6 +1,12 @@
 ########## 2.1.0.spectralValueSel ############
 GetMsData <- function(plotCsv, refBoardValue, VIsName) {
   plotMat0 <- as.matrix(read.csv(plotCsv, header = T, row.names = 1))
+  if (is.null(refBoardValue)) {
+    refBoardValue <- matrix(1, nrow = 1, ncol = 7)
+    colnames(refBoardValue) <- c("475550850_475", "475550850_550", "475550850_850", 
+                                 "550660850_550", "550660850_660", "550660850_850", 
+                                 "725")
+  }
   spectral475_475 <- plotMat0["475550850_475", ] / refBoardValue[, "475550850_475"]
   spectral475_550 <- plotMat0["475550850_550", ] / refBoardValue[, "475550850_550"]
   spectral475_850 <- plotMat0["475550850_850", ] / refBoardValue[, "475550850_850"]
@@ -40,7 +46,6 @@ GetMsData <- function(plotCsv, refBoardValue, VIsName) {
                   BNDVI = BNDVI, 
                   NDRE = NDRE, 
                   CIgreen = CIgreen, 
-                  GRVI = GRVI, 
                   CIRE = CIRE, 
                   MSR = MSR, 
                   MSRRE = MSRRE, 
@@ -70,6 +75,20 @@ SelectPlotCsvFromList <- function(allPlotCsvList, selectPlot, getOrRemove) {
     selPlotCsv <- allPlotCsvList[-selPlotPlace]
   }
   return(selPlotCsv)
+}
+
+##### 2.1.1.dataFolder.R ########
+FlowerDataAsDate <- function(flowerDate) { 
+  yearMonthDay <- str_split(flowerDate$FloweringDate, pattern = "/")
+  flowerDate$FloweringDate <- sapply(yearMonthDay, function(eachYearMonthDay) {
+    # eachYearMonthDay <- yearMonthDay[[1]]
+    eachDate <- paste0(eachYearMonthDay[1], "-", 
+                       str_sub(paste0("0", eachYearMonthDay[2]), start = -2), "-", 
+                       str_sub(paste0("0", eachYearMonthDay[3]), start = -2))
+    return(eachDate)
+  })
+  flowerDate$FloweringDate <- as.Date(flowerDate$FloweringDate)
+  return(flowerDate)
 }
 
 ####### 3.0.0.MTMFolder ###########

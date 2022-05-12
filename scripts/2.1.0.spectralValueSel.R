@@ -26,11 +26,9 @@ allResult <- foreach(dayInd = 1:length(data_day), .packages = c("doParallel", "s
   # dayInd <- 1
   the_day <- data_day[dayInd]
   
-  spectralEachDayFolder <- paste0("2019_M100_Xacti4eyeCamera_Images/2019", 
-                                  the_day, "/5.spectralAll")
-  refBoardFolder <- paste0("2019_M100_Xacti4eyeCamera_Images/2019", 
-                           the_day, "/3.spectral_value")
-  refBoardList <- list.files(refBoardFolder, pattern = "ref", full.names = T)
+  spectralEachDayFolder <- paste0("2019_M100_Xacti4eyeCamera_Images/raw/2019", 
+                                  the_day)
+  refBoardList <- list.files(spectralEachDayFolder, pattern = "ref", full.names = T)
   
   msEachCondition <- foreach(conditionEach = condition) %do% {
     # conditionEach <- condition[2]
@@ -41,7 +39,7 @@ allResult <- foreach(dayInd = 1:length(data_day), .packages = c("doParallel", "s
                                  "725")
     spectralCsvList0 <- list.files(spectralEachDayFolder, 
                                    full.names = T, pattern = conditionEach)
-    
+    spectralCsvList0 <- spectralCsvList0[-grep("ref", spectralCsvList0)]
     # get VIs value
     allMsValue <- lapply(spectralCsvList0, function(eachPlot) {
       # eachPlot <- spectralCsvList0[[1]]

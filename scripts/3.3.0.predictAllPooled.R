@@ -25,8 +25,9 @@ if (!file.exists(predictFolder)) {
 }
 
 
+
 # make the array to input all result
-kernelName <- c("MS", "G+MS", "G+E", "G+E+GEI", "G+E+MS")
+kernelName <- c("MS", "G+MS", "G+E", "G+E+GEI", "G+E+MS", "NDVI")
 resultIndex <- c("correlation", "R2", "RMSE")
 
 arrayResultRAINBOW <- array(NA, dim = c(length(dataWeek), 
@@ -89,6 +90,10 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
   
   # remove "plot", and each spectral
   dataAll <- dataAll0[, -c(3, 7:11)]
+  # dataAll <- na.omit(dataAll)
+  # 
+  # phenoData <- dataAll[, 3:ncol(dataAll)]
+  # msData <- dataAll[, 5:ncol(dataAll)]
   
   phenoDataAll0 <- na.omit(dataAll)
   phenoDataAll0 <- phenoDataAll0[phenoDataAll0$variety %in% colnames(amat0), ]
@@ -111,6 +116,9 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
   plantArea <- phenoDataAll0[, "plantArea"]
   names(plantArea) <- phenoDataAll0$variety
   
+  # NDVI
+  NDVI <- phenoDataAll0[, "NDVI"]
+  names(NDVI) <- phenoDataAll0$variety
   
   # make MS data kernel
   phenoMs <- phenoDataAll0[, 6:ncol(phenoDataAll0)]
@@ -122,9 +130,21 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
   # make amat
   amat <- amat0[names(dryWeight), names(dryWeight)]
   
+  # # make field dist
+  # kPosEach <- kPosEach0[rownames(phenoDataAll0), rownames(phenoDataAll0)]
+  # rownames(kPosEach) <- colnames(kPosEach) <- rownames(phenoDataAll0)
+  # kPosEachTre <- kPosEach * kernelTre
+  # rownames(kPosEachTre) <- colnames(kPosEachTre) <- names(dryWeight)
+  # # image(kPosEachTre)
+  
+  
   # make amat * treatment kernel
   kernelAmatTre <- amat * kernelTre
   # image(kernelAmatTre)
+  
+  # # make amattype * MS data kernel
+  # kernelAmatMs <- amat * kernelMs
+  
   
   # make amat list
   amatZ <- design.Z(pheno.labels = names(dryWeight),
@@ -134,6 +154,8 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
                    K = amat)
   
   # make MS list
+  # msZ <- design.Z(pheno.labels = names(dryWeight),
+  #                 geno.names = rownames(kernelMs))
   msZ <- diag(1, ncol(kernelMs))
   rownames(msZ) <- colnames(msZ) <- rownames(kernelMs)
   
@@ -147,6 +169,21 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
   amatTreList <- list(Z = amatTreZ,
                       K = kernelAmatTre)
   
+  # # # make filed kernel list
+  # fieldZ <- design.Z(pheno.labels = names(dryWeight),
+  #                    geno.names = rownames(kPosEachTre))
+  # 
+  # fieldList <- list(Z = fieldZ,
+  #                   K = kPosEachTre)
+  
+  # # make G * MS list
+  # amatMsZ <- design.Z(pheno.labels = names(dryWeight),
+  #                     geno.names = rownames(kernelAmatMs))
+  # 
+  # amatMsList <- list(Z = amatMsZ,
+  #                    K = kernelAmatMs)
+  # 
+  
   
   # set each ZETA 
   ZETA_MS <- list(msList = msList)
@@ -155,10 +192,18 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
   ZETA_G <- list(amat = amatList)
   ZETA_GT <- list(amat = amatList,
                   amatTre = amatTreList)
-
+  # ZETA_GM <- list(amat = amatList,
+  #                 msList = msList, 
+  #                 amatMs = amatMsList)
+  # 
+  
+  
   # make the fixed effect
   treatmentX0 <- treatmentMat
-
+  
+  NDVIX0 <- cbind(1, NDVI)
+  colnames(NDVIX0) <- c("intercept", "NDVI")
+  
   # make the fixed effect
   flowerDate <- phenoDataAll0$flower
   
@@ -176,11 +221,12 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
                    list(ZETA = ZETA_GM,  X0 = flowerX0, nameInd = "G+MS"), 
                    list(ZETA = ZETA_G,   X0 = multiX0,  nameInd = "G+E"), 
                    list(ZETA = ZETA_GT,  X0 = multiX0,  nameInd = "G+E+GEI"), 
-                   list(ZETA = ZETA_GM,  X0 = multiX0,  nameInd = "G+E+MS"))
+                   list(ZETA = ZETA_GM,  X0 = multiX0,  nameInd = "G+E+MS"), 
+                   list(ZETA = ZETA_G,   X0 = NDVIX0,   nameInd = "NDVI"))
   
   
   eachResult <- lapply(ZETAList, function(eachList) {
-    # eachList <- ZETAList[[1]]
+    # eachList <- ZETAList[[4]]
     
     ZETA <- eachList$ZETA
     X0 <- eachList$X0
@@ -195,6 +241,17 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
     colnames(resultEachSeed) <- resultIndex
     rownames(resultEachSeed) <- seedInd
     
+    # eachCrossResult <- foreach(seedIndEach = 1:length(seedInd),
+    #                            phenoDataAll0 = phenoDataAll0, 
+    #                            seedInd = seedInd, 
+    #                            rep5 = rep5, 
+    #                            dryWeight = dryWeight, 
+    #                            ZETA = ZETA, 
+    #                            X0 = X0, 
+    #                            nameInd = nameInd, 
+    #                            resultEachSeed = resultEachSeed, 
+    #                            saveFolder = saveFolder,
+    #                            .packages = c("BGLR", "RAINBOWR", "stringr")) %dopar% {
     varietyName <- unique(phenoDataAll0[, "variety"])
     
     for (seedIndEach in 1:length(seedInd)) {
@@ -214,10 +271,10 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
         
         if (ZETA == "lm") {
           
-          lmFit <- lm(dryWeight[!testInd] ~ X0[!testInd, "plantArea"])
+          lmFit <- lm(dryWeight[!testInd] ~ X0[!testInd, "NDVI"])
           a <- lmFit$coefficients[2]
           b <- lmFit$coefficients[1]
-          lmPred <- a * X0[testInd, "plantArea"] + b
+          lmPred <- a * X0[testInd, "NDVI"] + b
           
           predictionDataRAINBOW[testInd] <- lmPred
         } else {
@@ -230,8 +287,8 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
           predictionDataRAINBOW[testInd] <- resEM3$y.pred[testInd]
         }
       }
-      predictData <- exp(predictionDataRAINBOW)
-      obsData <- exp(dryWeight)
+      predictData <- (predictionDataRAINBOW)
+      obsData <- (dryWeight)
       # calculate the R2 and RMSE
       correlation <- cor(obsData, predictData)
       R2 <- 1 - sum((obsData - predictData) ^ 2) / sum((obsData - mean(obsData)) ^ 2)
@@ -239,6 +296,7 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
       
       # input the result
       resultEachSeed[seedIndEach, ] <- c(correlation, R2, RMSE)
+      # arrayResultEachDay[ZETA, ] <- c(correlation, R2, RMSE)
       
       # make the plot
       xlim <- ylim <- range(predictData, obsData)
@@ -250,9 +308,12 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
            main = paste0("RAINBOW prediction ", nameInd, " r = ", round(correlation, 2)))
       abline(0, 1, col = 2, lty = 2)
       dev.off()
+      # return(c(correlation, R2, RMSE))
     }
+    # arrayResultEachDay[ZETA, ] <- apply(resultEachSeed, 2, mean)
     return(apply(resultEachSeed, 2, mean))
   })
+  # eachResult <- NULL
   eachDayResult <- do.call(what = rbind, args = eachResult)
   rownames(eachDayResult) <- kernelName
   write.csv(eachDayResult, file = paste0(saveFolder, "/eachDayResult.csv"))
@@ -266,7 +327,7 @@ stopCluster(cl)
 resultFolder <- predictFolder
 
 for (eachDay in dataWeek) {
-  # eachDay <- dataWeek[1]
+  # eachDay <- dataWeek[2]
   resultFolderEach <- paste0(resultFolder, "/", eachDay)
   resultFile <- list.files(resultFolderEach, pattern = ".csv", full.names = T)
   resultDf <- read.csv(resultFile[[1]], header = T, row.names = 1)
@@ -279,16 +340,20 @@ ShowArrayResult <- function(resultArray, resultArrayInd, resultName) {
   eachResultDf <- CsvToDf(baseCsv = eachResultMat, 
                           csvRowInd = rownames(eachResultMat), 
                           csvColInd = colnames(eachResultMat))
-  colnames(eachResultDf) <- c("value", "model", "day")
-  eachResultDf$day <- as.factor(eachResultDf$day)
-  eachResultDf$day <- as.numeric(eachResultDf$day)
+  colnames(eachResultDf) <- c("value", "model", "Week")
+  eachResultDf$Week <- as.factor(eachResultDf$Week)
+  eachResultDf$Week <- as.numeric(eachResultDf$Week)
   
-  g <- ggplot(eachResultDf, aes(x = day, y = value, colour = model)) + 
+  # g <- ggplot(eachResultDf, aes(x = Week, y = value, fill = kernel)) + 
+  #   geom_bar(stat = "identity", position = "dodge") + 
+  g <- ggplot(eachResultDf, aes(x = Week, y = value, colour = model)) + 
     geom_line(size = 1) + 
-    scale_color_manual(values = c("steelblue2", "coral4", "springgreen3", "tan1")) + 
-    scale_x_continuous(breaks = c(1:6), labels = dataWeek) + 
-    labs(title = paste0(resultName, " of kernel prediction"),  
-         y = paste0(resultName))
+    # facet_wrap(~ testCondition) + 
+    # ylim(ymin, ymax) +
+    scale_color_manual(values = c("steelblue2", "coral4", "springgreen3", "tan1", "gray40")) + 
+    scale_x_continuous(breaks = c(1:6), labels = c(1:6))
+    # labs(title = paste0(resultName, " of kernel prediction"),  
+    #      y = paste0(resultName))
   return(g)
 }
 
@@ -319,6 +384,9 @@ png(paste0(predictFolder, "/resultLineRMSEPooled.png"),
 print(gRMSE)
 dev.off()
 
-
+# calculate the result
 resultCor <- arrayResultRAINBOW[, , 1]
 mean(resultCor[, 4] / resultCor[, 3])
+
+mean(resultCor[1:4, 1] / resultCor[1:4, 5])
+mean(resultCor[5:6, 1] / resultCor[5:6, 5])

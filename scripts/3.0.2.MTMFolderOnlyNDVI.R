@@ -18,7 +18,8 @@ source("R/1.MTM_2.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
-mtmFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.0.1.MTMFolderWithFlowerDate"
+mtmFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.0.2.MTMFolderOnlyNDVI"
+# mtmFolder <- "C:/Users/biometrics/Desktop/3.0.2.test"
 if (!file.exists(mtmFolder)) {
   dir.create(mtmFolder)
 }
@@ -43,12 +44,7 @@ foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
   
   dataFrame0 <- read.csv(paste0(phenoFolder, "/", the_day, "_medianPheno.csv"),
                          header = TRUE, row.names = 1)
-  df <- dataFrame0[, c("variety", "treatment", "flower", "dryWeight", "plantArea", 
-                       "GRVI",
-                       "NDVI", 
-                       "NDRE", 
-                       "NDI", 
-                       "RTVI")]
+  df <- dataFrame0[, c("variety", "treatment", "flower", "dryWeight", "NDVI")]
   df <- na.omit(df)
   
   
@@ -149,12 +145,7 @@ stopCluster(cl)
 
 #### make corplot from "genetic covariance matrix" "residual covariance matrix" ######
 #### make ggplot for the change of "obs_cor", "g_cor", "res_cor" #####
-band_name <- c("dryWeight", 
-               "GRVI",
-               "NDVI", 
-               "NDRE", 
-               "NDI", 
-               "RTVI")
+band_name <- c("dryWeight", "NDVI")
 condition <- c("W1", "W2", "W3", "W4")  
 
 
@@ -165,9 +156,6 @@ dimnames(gCorDryWeightArray) <- list(dataWeek, band_name, condition)
 # save the corplot as png
 treatment <- c("C", "W5", "W10", "D")
 
-# set the mean matrix to input
-meanMat <- matrix(NA, nrow = length(treatment), ncol = length(dataWeek))
-dimnames(meanMat) <- list(treatment, dataWeek)
 for (the_day in dataWeek) {
   # the_day <- dataWeek[4]
   
@@ -193,10 +181,9 @@ for (the_day in dataWeek) {
     
     # make cor plot "g"
     g_cov_path <- paste0(data_folder, "/", g_cov_read)
-    indexAll <- c("dryWeight", "plantArea", "GRVI", "NDVI", "NDRE", "NDI", "RTVI")
+    indexAll <- c("dryWeight", "NDVI")
     cor_value_g0 <- MakeCorMat(g_cov_path, indexAll)
-    cor_value_g <- cor_value_g0[-2, -2]
-    meanMat[treatmentEach, the_day] <- (sum(cor_value_g[-1, -1]) - 5) / 20
+    cor_value_g <- cor_value_g0
     
     corrplot(cor_value_g, method = "shade", tl.srt = 45, addCoef.col = "black", 
              tl.col = "black", number.cex = .7)
@@ -211,21 +198,19 @@ for (the_day in dataWeek) {
 
 # make the day change of the genetic correlation between biomass and VIs
 eachCorArray <- gCorDryWeightArray[, -1, ]
+rownames(eachCorArray) <- str_replace(rownames(eachCorArray), 
+                                      pattern = "w", replacement = "W")
+colnames(eachCorArray) <- c("C", "W5", "W10", "D")
 png(paste0(mtmFolder, "/genomeCorDryWeight.png"), 
     height = 1440, width = 1440, res = 216)
-opar <- par(mfrow = c(2, 2))
+write.csv(eachCorArray, 
+          paste0(mtmFolder, "/genomeCorDryWeight_NDVI.csv"))
+corrplot(eachCorArray, method = "shade", tl.srt = 45, 
+         addCoef.col = "black", tl.col = "black")
+# mtext(paste0("genomeCorDryWeight NDVI")
+#       , at = 3, line = 3, cex = .8)
 
-for (conditionEach in condition) {
-  # conditionEach <- condition[1]
-  write.csv(eachCorArray[, , conditionEach], 
-            paste0(mtmFolder, "/genomeCorDryWeight_", conditionEach, ".csv"))
-  corrplot(eachCorArray[, , conditionEach], method = "shade", tl.srt = 45, tl.cex = .8, 
-           addCoef.col = "black", tl.col = "black", number.cex = .7)
-  mtext(paste0("genomeCorDryWeight ", conditionEach)
-        , at = 3, line = 3, cex = .8)
-}
 dev.off()
-par(opar)
 
 # from week4 to week5 what % increase
 mean(gCorDryWeightArray[5, 2:6, 1:3] / gCorDryWeightArray[4, 2:6, 1:3]) 

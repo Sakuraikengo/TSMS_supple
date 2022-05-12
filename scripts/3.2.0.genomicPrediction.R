@@ -15,7 +15,7 @@ source("R/1.functionCode.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
-kernelFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.2.1.kernelPredictionWithFlowerDate"
+kernelFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.2.0.genomicPrediction"
 if (!dir.exists(kernelFolder)) {
   dir.create(kernelFolder)
 }
@@ -31,7 +31,7 @@ phenoFolder <- "2019_M100_Xacti4eyeCamera_Images/result/2.1.1.dataFolder"
 # set the condition
 condition <- c("W1", "W2", "W3", "W4")
 
-kernelName <- c("G", "MS", "G+MS", "G+Field", "NDVI")
+kernelName <- c("G", "G+Flower")
 resultIndex <- c("Correlation", "R2", "RMSE")
 
 # make the array to input correlation
@@ -60,18 +60,6 @@ colnames(amat0)[colnames(amat0) == "X5002T"] <- "5002T"
 colnames(amat0)[colnames(amat0) == "HOUJAKU_KUWAZU"] <- "Houjaku Kuwazu"
 rownames(amat0)[rownames(amat0) == "HOUJAKU_KUWAZU"] <- "Houjaku Kuwazu"
 
-# set the field dist
-fieldMap <- data.frame(read_csv("2019_M100_Xacti4eyeCamera_Images/field_data/2020_Tottori_Main_PlotPosition.csv"))
-D2 <- as.matrix(dist(fieldMap[,c("x.real", "y.real")]))^2
-# image(D2)
-D2[1:100,101:200] <- Inf
-D2[101:200,1:100] <- Inf
-# image(D2)
-
-D2.sub <- D2[1:100, 1:100]
-h <- 1 / median(D2.sub[upper.tri(D2.sub)])
-kPos <- exp(-h * D2)
-# image(kPos)
 
 phenoRef0 <- read.csv(paste0(phenoFolder, "/week1_medianPheno.csv"),
                       header = TRUE, row.names = 1)
@@ -130,41 +118,14 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
     # select the training and test condition data
     phenoDataAll <- phenoDataAll0[phenoDataAll0$treatment == conditionEach, ]
     dim(phenoDataAll)
-    # # plant area
-    # plantArea <- phenoDataAll[, "plantArea"]
-    # names(plantArea) <- phenoDataAll$variety
     
     # dryweight
     dryWeight0 <- phenoDataAll[, "dryWeight"]
     dryWeight <- scale(phenoDataAll[, "dryWeight"])
     names(dryWeight) <- phenoDataAll$variety
-    # image(tcrossprod(scale(dryWeight)))
-    
-    # NDVI
-    NDVI0 <- phenoDataAll[, "NDVI"]
-    NDVI <- scale(phenoDataAll[, "NDVI"])
-    names(NDVI) <- phenoDataAll$variety
-    
-    # make MS data kernel
-    phenoMs <- phenoDataAll[, 6:ncol(phenoDataAll)]
-    phenoMs <- as.matrix(phenoMs)
-    rownames(phenoMs) <- phenoDataAll$variety
-    phenoMsScaled <- scale(phenoMs)
-    kernelMs <- tcrossprod(phenoMsScaled)
     
     # make amat
     amat <- amat0[names(dryWeight), names(dryWeight)]
-    # amat <- diag(1, ncol(kernelMs))
-    # rownames(amat) <- colnames(amat) <- names(dryWeight)
-    # image(amat)
-    
-    # make field dist
-    kPosEach0 <- kPos
-    plotInd <- as.numeric(stringr::str_sub(rownames(phenoDataAll), 4, 6))
-    kPosEach <- kPosEach0[plotInd, plotInd]
-    # dim(kPosEach)
-    rownames(kPosEach) <- colnames(kPosEach) <- phenoDataAll$variety
-    
     
     # make amat list
     amatZ <- design.Z(pheno.labels = names(dryWeight),
@@ -173,27 +134,8 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
     amatList <- list(Z = amatZ,
                      K = amat)
     
-    # make MS list
-    msZ <- design.Z(pheno.labels = names(dryWeight),
-                    geno.names = rownames(kernelMs))
-    # msZ <- diag(1, ncol(kernelMs))
-    
-    msList <- list(Z = msZ,
-                   K = kernelMs)
-    
-    # make filed kernel list
-    fieldZ <- design.Z(pheno.labels = names(dryWeight),
-                       geno.names = rownames(kPosEach))
-    fieldList <- list(Z = fieldZ,
-                      K = kPosEach)
-    
     # set each ZETA 
     ZETA_G <- list(amat = amatList)
-    ZETA_MS <- list(msList = msList)
-    ZETA_GM <- list(amat = amatList,
-                    msList = msList)
-    ZETA_GF <- list(amat = amatList, 
-                    fieldList = fieldList)
     
     # make the fixed effect
     flowerDate <- phenoDataAll$flower
@@ -205,16 +147,9 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
       flowerX0 <- NULL
     }
     
-    # set the fixed effect
-    NDVIX0 <- cbind(1, NDVI)
-    colnames(NDVIX0) <- c("intercept", "NDVI")
     
-    
-    ZETAList <- list(list(ZETA = ZETA_G,  X0 = flowerX0, nameInd = "G"), 
-                     list(ZETA = ZETA_MS, X0 = flowerX0, nameInd = "MS"), 
-                     list(ZETA = ZETA_GM, X0 = flowerX0, nameInd = "G+MS"), 
-                     list(ZETA = ZETA_GF, X0 = flowerX0, nameInd = "G+Field"), 
-                     list(ZETA = "lm", X0 = NDVIX0, nameInd = "NDVI"))
+    ZETAList <- list(list(ZETA = ZETA_G,  X0 = NULL,     nameInd = "G"), 
+                     list(ZETA = ZETA_G,  X0 = flowerX0, nameInd = "G+Flower"))
     
     eachResult <- lapply(ZETAList, function(eachList) {
       # eachList <- ZETAList[[5]]
@@ -328,12 +263,6 @@ write.csv(allDayResultDf0, paste0(kernelFolder, "/resultLongDf.csv"))
 colnames(allDayResultDf0) <- c("value", "index", "model", "condition", "week")
 allDayResultDf <- allDayResultDf0
 
-# mtmResult0 <- read.csv("2019_M100_Xacti4eyeCamera_Images/data_pictures/3.5.2.3.MTMpredictionWithFlowerDate/resultLongDf.csv", 
-#                       header = T, row.names = 1)
-# mtmResult <- data.frame(mtmResult0$value, "Correlation", mtmResult0$model, mtmResult0$treatment, mtmResult0$week)
-# colnames(mtmResult) <- c("value", "index", "model", "condition", "week")
-# allDayResultDf <- rbind(allDayResultDf0, mtmResult)
-
 allDayResultDf$week <- as.factor(allDayResultDf$week)
 allDayResultDf$week <- as.numeric(allDayResultDf$week)
 resultIndList <- list("Correlation", "R2", "RMSE")
@@ -363,8 +292,8 @@ ggLineList <- lapply(resultIndList, function(eachResultInd) {
     facet_wrap(~ condition) + 
     geom_line(size = 1) + 
     # ylim(ymin, ymax) +
-    scale_linetype_manual(values = c("solid", "dashed", "solid", "solid", "solid")) + 
-    scale_color_manual(values = c("steelblue2", "ivory4", "springgreen3", "tan1", "gray40")) + 
+    scale_linetype_manual(values = c("solid", "solid")) + 
+    scale_color_manual(values = c("black", "steelblue2")) + 
     labs(y = paste0(eachResultInd)) + 
     scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
                        labels = seq(xmin, xmax, by = 1))
@@ -393,63 +322,20 @@ png(paste0(kernelFolder, "/resultLineRMSE.png"),
 print(ggLineList[[3]])
 dev.off()
 
-# remove the kernel of "G+Field"
-allDayResultDfSel <- resultForGG[resultForGG$Model != "G+Field", ]
-ggLineListSel <- lapply(resultIndList, function(eachResultInd) {
-  # eachResultInd <- resultIndList[[1]]
-  allDayResultEach <- allDayResultDfSel[allDayResultDfSel$index == eachResultInd, ]
-  xmin <- min(allDayResultEach$Week)
-  xmax <- max(allDayResultEach$Week)
-  g <- ggplot(allDayResultEach, aes(x = Week, y = value, colour = Model, linetype = Model)) + 
-    facet_wrap(~ condition) + 
-    geom_line(size = 1) + 
-    # ylim(ymin, ymax) +
-    scale_linetype_manual(values = c("solid", "solid", "solid", "dashed")) + 
-    scale_color_manual(values = c("steelblue2", "springgreen3", "tan1", "tomato2")) + 
-    labs(y = paste0(eachResultInd)) + 
-    scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
-                       labels = seq(xmin, xmax, by = 1))
-  return(g)
-})
+result <- allDayResultDf[allDayResultDf$index == "Correlation", ]
 
-# write down as .png
-png(paste0(kernelFolder, "/resultLineCorrelationSel.png"), 
-    height = 1440, width = 1440, res = 216)
-print(ggLineListSel[[1]])
-dev.off()
+resultG <- result[result$model == "G", ]
+resultF <- result[result$model == "G+Flower", ]
 
-png(paste0(kernelFolder, "/resultLineR2Sel.png"), 
-    height = 1440, width = 1440, res = 216)
-print(ggLineListSel[[2]])
-dev.off()
+tapply(resultF[, "value"] / resultG[, "value"], INDEX = resultF$condition, mean)
 
-png(paste0(kernelFolder, "/resultLineRMSESel.png"), 
-    height = 1440, width = 1440, res = 216)
-print(ggLineListSel[[3]])
-dev.off()
-
-result <- allDayResultDfSel[allDayResultDfSel$index == "Correlation", ]
 resultMax <- tapply(result$value, INDEX = result$condition, max)
 mean(resultMax[c(1, 4)]) / mean(resultMax[c(2, 3)])
 
 valueWeek2_G <- result[result$Model == "G" & result$Week == 2, ]$value
-valueWeek2_MS <- result[result$Model == "MS" & result$Week == 2, ]$value
-mean(valueWeek2_MS / valueWeek2_G)
-
-MS <- result[result$Model == "MS", ]
-valueMAX_MS <- tapply(MS$value, MS$condition, max)
-valueWeek2_MS <- result[result$Model == "MS" & result$Week == 2, ]$value
-valueMAX_MS / valueWeek2_MS
-
-NDVI <- result[result$Model == "NDVI", ]
-tapply(MS$value / NDVI$value, NDVI$condition, mean)
-
-GMS <- result[result$Model == "G+MS", ]
-mean((GMS$value / MS$value)[1:4])
+valueWeek2_GMS <- result[result$Model == "G+MS" & result$Week == 2, ]$value
+mean(valueWeek2_GMS / valueWeek2_G)
 
 value_MS <- result[result$Model == "MS" & result$Week != 1, ]$value
 value_GMS <- result[result$Model == "G+MS" & result$Week != 1, ]$value
 mean(value_GMS / value_MS)
-
-MS[MS$Week == 2, "value"] / NDVI[NDVI$Week == 2, "value"]
-MS[MS$Week == 5, "value"] / NDVI[NDVI$Week == 5, "value"]

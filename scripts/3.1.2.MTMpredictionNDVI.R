@@ -20,9 +20,9 @@ source("R/1.MTM_2.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
-# mtmFolder <- "C:/Users/biometrics/Desktop/3.1.1'.test"
+# mtmFolder <- "C:/Users/biometrics/Desktop/3.1.2'.test"
 
-mtmFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.1.1.MTMpredictionWithFlowerDate"
+mtmFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.1.2.MTMpredictionNDVI"
 if (!file.exists(mtmFolder)) {
   dir.create(mtmFolder)
 }
@@ -47,6 +47,7 @@ resultIndex <- c("Correlation", "R2", "RMSE")
 # make the array to input correlation
 arrayResultMTM <- array(NA, dim = c(length(condition), length(resultIndex)))
 dimnames(arrayResultMTM) <- list(condition, resultIndex)
+
 # read the amat
 amat0 <- as.matrix(read.csv('genome/amat173583SNP.csv', 
                             row.names = 1, header = T))
@@ -61,7 +62,7 @@ if (length(list.files(mtmFolder)) < 7) {
   cl <- makeCluster(10)
   registerDoParallel(cl)
   resultAll <- foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
-    # the_day <- dataWeek[[1]]
+    # the_day <- dataWeek[[5]]
     the_day <- dataWeek[[dayInd]]
     
     dataFrame0 <- read.csv(paste0(phenoFolder, "/", the_day, "_medianPheno.csv"),
@@ -74,11 +75,7 @@ if (length(list.files(mtmFolder)) < 7) {
                          "RTVI")]
     df <- na.omit(df)
     df <- df[, c("variety", "treatment", "flower", "dryWeight", 
-                 "GRVI",
-                 "NDVI", 
-                 "NDRE", 
-                 "NDI", 
-                 "RTVI")]
+                 "NDVI")]
     # df[df$plot_ID == "Houjaku Kuwazu", "plot_ID"] <- "HOUJAKU_KUWAZU"
     
     # delete the variety which has missing value
@@ -111,15 +108,14 @@ if (length(list.files(mtmFolder)) < 7) {
     # pdf('2.1.5.1.MTMnoFixedEffect/diagnosis.pdf')
     for (treatment_i in name_treatment) {
     # for (treatment_i in "W4") {
-      # treatment_i <- name_treatment[1]
+      # treatment_i <- name_treatment[4]
       
       # choose data of the target treatment
       phenodat_i <- phenodat[phenodat$treatment == treatment_i, ]
-      # phenodat_i[rownames(phenodat_i) %in% each_rm, 4] <- NA
-      # phenodat_i[rownames(phenodat_i) %in% c("W4-009", "W4-143", "W4-034", "W4-042", "W4-109"), 4] <- NA
       phenodat_i <- na.omit(phenodat_i)
-      # phenodat_i <- phenodat_i[match(colnames(amat), phenodat_i$line), ]
       
+      # phenodat_i <- phenodat_i[match(colnames(amat), phenodat_i$line), ]
+      # phenodat_i[order(phenodat_i$dryWeight, decreasing = T), ]
       
       phenodat_i <- phenodat_i[phenodat_i$line %in% colnames(amat0), ]
       amat <- amat0[as.vector(phenodat_i$line), as.vector(phenodat_i$line)]
@@ -193,7 +189,11 @@ if (length(list.files(mtmFolder)) < 7) {
                              nIter = 48000, burnIn = 8000, thin = 40,
                              saveAt = paste0(new_folder, "/", treatment_i, '_'))
           )
-          
+          # str(res_MTM)
+          # cov(res_MTM$E)
+          # res_MTM$resCov
+          # res_MTM$K[[1]]$G
+          # cor(predictEach, res_MTM$E[, 1])
           # put into the predicted value
           # predictionData[crossCvInd == times] <- res_MTM$YHat[, "dryWeight"][crossCvInd == times]
           if (is.null(MTM_XF)) {
@@ -206,7 +206,7 @@ if (length(list.files(mtmFolder)) < 7) {
         
         predictData <- (predictionData)
         obsData <- (dryWeight)
-        
+        # plot(predictionData, dryWeight)
         # calculate the R2 and RMSE
         correlation <- cor(obsData, predictData)
         R2 <- 1 - sum((obsData - predictData) ^ 2) / sum((obsData - mean(obsData)) ^ 2)
@@ -215,12 +215,14 @@ if (length(list.files(mtmFolder)) < 7) {
         # input the result
         resultEachSeed[seedIndEach, ] <- c(correlation, R2, RMSE)
         
-        xlim <- ylim <- range(predictData, obsData)
+        xlim <- ylim <- range(obsData, predictData)
         png(paste0(new_folder, "/predictionPlot", 
                    treatment_i, "_", seedIndEach, ".png"))
         plot(obsData, predictData, 
              main = paste0(" MTM prediction ", treatment_i), 
              xlim = xlim, ylim = ylim)
+        # plot(exp(dryWeight), exp(predictionData), 
+        #      main = paste0(" MTM prediction ", treatment_i))
         abline(0, 1, col = 2, lty = 2)
         dev.off()
       }
@@ -236,14 +238,15 @@ if (length(list.files(mtmFolder)) < 7) {
   stopCluster(cl)
 }
 
+######## read the each day data ############
 allDayResultDfList <- lapply(dataWeek, function(eachDay) {
   # eachDay <- dataWeek[1]
   resultFolder <- paste0(mtmFolder, "/", the_year, eachDay)
   eachDayResultList <- list.files(resultFolder, pattern = "_result.csv", full.names = T)
   eachDayResultDfList <- lapply(eachDayResultList, function(eachDayEachCondition) {
     # eachDayEachCondition <- eachDayResultList[[1]]
-    # eachCondition0 <- str_split(eachDayEachCondition, pattern = "/")[[1]][7]
     eachCondition0 <- str_split(eachDayEachCondition, pattern = "/")[[1]][5]
+    # eachCondition0 <- str_split(eachDayEachCondition, pattern = "/")[[1]][7]
     eachCondition <- str_sub(eachCondition0, 1, 2)
     eachDayEachConditionCsv <- read.csv(eachDayEachCondition, header = T, row.names = 1)
     eachDayEachConditionDf0 <- CsvToDf(baseCsv = eachDayEachConditionCsv, 
@@ -258,21 +261,28 @@ allDayResultDfList <- lapply(dataWeek, function(eachDay) {
 })
 
 allDayResultDf0 <- do.call(what = rbind, args = allDayResultDfList)
+allDayResultDf0$rowInd <- "NDVI"
 write.csv(allDayResultDf0, paste0(mtmFolder, "/resultLongDf.csv"))
-colnames(allDayResultDf0) <- c("value", "index", "model", "condition", "week")
-allDayResultDf <- allDayResultDf0
-
-
 
 ########## visualize the result #########
+# read the result of G model
 resultCsvMT <- paste0(mtmFolder, "/resultLongDf.csv")
 resultMTlong <- read.csv(resultCsvMT, header = T, row.names = 1)
 
-resultCsvST <- "2019_M100_Xacti4eyeCamera_Images/data_pictures/3.5.3.8.kernelFolderNoPlantAreaWithOthers/resultLongDf.csv"
+resultCsvST <- "2019_M100_Xacti4eyeCamera_Images/result/3.2.1.kernelPredictionWithFlowerDate/resultLongDf.csv"
 resultST0 <- read.csv(resultCsvST, header = T, row.names = 1)
 resultSTlong <- resultST0[resultST0$rowInd == "G", ]
 
-resultAllLong <- rbind(resultMTlong, resultSTlong)
+# read the result of MT model
+resultCsvMT2File <- "2019_M100_Xacti4eyeCamera_Images/result/3.1.1.MTMpredictionWithFlowerDate/resultLongDf.csv"
+resultCsvMTlong2 <- read.csv(resultCsvMT2File, header = T, row.names = 1)
+# resultCsvMT2 <- resultCsvMT2[resultCsvMT2$colInd == "Correlation", ]
+# resultCsvMT2long <- data.frame(resultCsvMT2$value, resultCsvMT2$week, 
+#                                resultCsvMT2$condition, resultCsvMT2$rowInd)
+# colnames(resultCsvMT2long) <- c("value", "week", "treatment", "model")
+
+# bind the all result
+resultAllLong <- rbind(resultMTlong, resultSTlong, resultCsvMTlong2)
 colnames(resultAllLong) <- c("value", "index", "model", "condition", "week")
 
 resultAllLong$week <- as.factor(resultAllLong$week)
@@ -296,6 +306,22 @@ for (eachCondition in conditionList) {
 resultForGG$condition <- factor(resultForGG$condition, 
                                 levels = c("C", "W5", "W10", "D"))
 
+gHerDryWeight <- read.csv(paste("2019_M100_Xacti4eyeCamera_Images", 
+                                "result", 
+                                "2.2.0.PCA_VIs", 
+                                "df_heritability", 
+                                "week1_gHeritabilityEachCondition.csv", sep = "/"), 
+                          header = T, row.names = 1)
+upperLimit <- data.frame(condition = c("C", "W5", "W10", "D"), 
+                         lim = sqrt(gHerDryWeight[, "dryWeight"]))
+# upperLimit <- data.frame(condition = c("C", "W5", "W10", "D"), 
+#                          lim = c(sqrt(0.481129501), 
+#                                  sqrt(0.407752492), 
+#                                  sqrt(0.438028531), 
+#                                  sqrt(0.214734304)))
+upperLimit$condition <- factor(upperLimit$condition, 
+                               levels = c("C", "W5", "W10", "D"))
+
 ggLineList <- lapply(resultIndList, function(eachResultInd) {
   # eachResultInd <- resultIndList[[1]]
   allDayResultEach <- resultForGG[resultForGG$index == eachResultInd, ]
@@ -305,9 +331,9 @@ ggLineList <- lapply(resultIndList, function(eachResultInd) {
   g <- ggplot(allDayResultEach, aes(x = Week, y = value, colour = Model, linetype = Model)) +
     facet_wrap(~ condition) +
     geom_line(size = 1) +
-    # ylim(ymin, ymax) +
+    geom_hline(aes(yintercept = lim), linetype = "dashed", data = upperLimit) +
     scale_linetype_manual(values = c("solid", "solid", "solid", "solid")) +
-    scale_color_manual(values = c("steelblue2", "tomato2")) +
+    scale_color_manual(values = c("steelblue2", "tomato2", "gray40")) +
     labs(y = paste0(eachResultInd)) + 
     scale_x_continuous(breaks = seq(xmin, xmax, by = 1),
                        labels = seq(xmin, xmax, by = 1))
@@ -329,6 +355,20 @@ png(paste0(mtmFolder, "/resultLineRMSE.png"),
     height = 1440, width = 1440, res = 216)
 print(ggLineList[[3]])
 dev.off()
+
+
+
+# the average of prediction accuracy for G model
+resultG <- resultForGG[resultForGG$index == "Correlation" & resultForGG$Model == "G", ]
+tapply(resultG$value, resultG$condition, mean)
+
+# the average of prediction accuracy for MT model
+resultM <- resultForGG[resultForGG$index == "Correlation" & resultForGG$Model == "MT", ]
+tapply(resultM$value, resultM$condition, mean)
+
+# the average of prediction accuracy for NDVI model
+resultN <- resultForGG[resultForGG$index == "Correlation" & resultForGG$Model == "NDVI", ]
+tapply(resultN$value, resultN$condition, mean)
 
 # the gain of MT model (week2)
 resultMTcor <- resultMTlong[resultMTlong$colInd == "Correlation", ]
@@ -355,4 +395,3 @@ gain1 <- round(mean(maxLatter / maxFormer), 2)
 round(mean(resultMTcor[resultMTcor$week == "week3", "value"] / resultMTcor[resultMTcor$week == "week1", "value"]), 2)
 # from week3 to week6 what % up
 round(mean(resultMTcor[resultMTcor$week == "week6", "value"] / resultMTcor[resultMTcor$week == "week3", "value"]), 2)
-

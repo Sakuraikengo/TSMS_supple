@@ -101,7 +101,7 @@ foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
     # estimation
     MTM_output <- capture.output(
       res_MTM <- MTM(Y = MTM_Y, K = MTM_K, resCov = MTM_resCov,
-                     nIter = 12000, burnIn = 2000, thin = 20, 
+                     nIter = 120000, burnIn = 20000, thin = 200, 
                      saveAt = paste0(new_folder, "/", treatment_i, '_'))
     )
     
