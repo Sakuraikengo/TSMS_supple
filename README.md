@@ -13,11 +13,14 @@ If you want to watch the "supplementary_data", please click the "supplementary_d
     * 2.1.1.dataFolder.R : make the data.frame for the anarysis
     * 3.0.0.MTMFolder.R : make the multi-trait model(MTM)
     * 3.0.1.MTMFolderWithFlowerDate.R : add the flowering or not as fixed effect in "3.0.0"
-    * 3.1.0.MTMprediction.R : predict the above-ground biomass (AGB) using the MTM
-    * 3.1.1.MTMpredictionWithFlowerDate.R : add the flowering or not as fixed effect in "3.1.0"
-    * 3.2.0.kernelPrediction.R : predict AGB using single/multi kernel model
-    * 3.2.1.kernelPredictionWithFlowerDate.R : add the flowering or not as fixed effect in "3.2.0"
+    * 3.0.2.MTMFolderOnlyNDVI.R : make the multi-trait model using above-ground biomass (AGB) and only NDVI
+    * 3.1.1.MTMpredictionWithFlowerDate.R : predict the AGB using the MTM
+    * 3.1.2.MTMpredictionNDVI.R : predict the AGB using the MTM with only NDVI
+    * 3.2.0.genomicPrediction.R : predict AGB using genomic information
+    * 3.2.1.kernelPredictionWithFlowerDate.R : predict AGB using single/multi kernel model
     * 3.3.0.predictAllPooled.R : predict AGB over all treatments
+    * 9.0.0.ANOVAdryweight.R : do the anova test for AGB data
+    * 9.0.1.MTMFolderOnlyDTF.R : calculate the genetic correlation between days to flowering (DTF) and AGB
 * supplemenatry_data.zip
     * 2019_M100_Xacti4eyeCamera_Images
         * field_data : This folder contains field data (ex. plot position, soil moisture).
