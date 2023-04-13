@@ -1,8 +1,6 @@
 # TSMS_supple
 Data which was used in the "Time-series Multi-spectral Imaging of Soybean for Predicting Biomass and Improving the Accuracy of Genomic Prediction" was uploaded here.
 
-If you want to watch the whole data which is used in this analysis, please click the "supplementary_data.zip" and "Download" button. Then, Download the zip file. 
-
 ---
 
 * scripts
@@ -21,17 +19,16 @@ If you want to watch the whole data which is used in this analysis, please click
     * 3.3.0.predictAllPooled.R : predict AGB over all treatments
     * 9.0.0.ANOVAdryweight.R : do the anova test for AGB data
     * 9.0.1.MTMFolderOnlyDTF.R : calculate the genetic correlation between days to flowering (DTF) and AGB
-* supplemenatry_data.zip
-    * 2019_M100_Xacti4eyeCamera_Images
-        * field_data : This folder contains field data (ex. plot position, soil moisture).
-        * MSdata : This folder contains multi-spectral data.
-        * plantArea : This folder contains the plant area
-        * raw : This folder contains spectral info each day (file size was too large to upload)
-        * result : This folder contains the results of the each analysis
-    * figure
+* 2019_M100_Xacti4eyeCamera_Images
+    * field_data : This folder contains field data (ex. plot position, soil moisture).
+    * MSdata : This folder contains multi-spectral data.
+    * plantArea : This folder contains the plant area
+    * raw : This folder contains spectral info each day (file size was too large to upload)
+    * result : This folder contains the results of the each analysis
+* figure
     Figures which were used in the paper
-    * genome
+* genome
     Genome data (the file size of "Gm198_HCDB_190207.fil.snp.remHet.MS0.95_bi_MQ20_DP3-1000.MAF0.025.imputed.v2.chrnum.vcf.gz" was too large to upload)
-    * supple
+* supple
     Supplementary data in the paper
 
