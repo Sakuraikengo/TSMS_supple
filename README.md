@@ -1,7 +1,7 @@
 # TSMS_supple
 Data which was used in the "Time-series Multi-spectral Imaging of Soybean for Predicting Biomass and Improving the Accuracy of Genomic Prediction" was uploaded here.
 
-If you want to watch the "supplementary_data", please click the "supplementary_data.zip". Then, Download the zip file. 
+If you want to watch the whole data which is used in this analysis, please click the "supplementary_data.zip" and "Download" button. Then, Download the zip file. 
 
 ---
 
