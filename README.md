@@ -26,11 +26,12 @@ If you want to watch the whole data which is used in this analysis, please click
         * field_data : This folder contains field data (ex. plot position, soil moisture).
         * MSdata : This folder contains multi-spectral data.
         * plantArea : This folder contains the plant area
+        * raw : This folder contains spectral info each day (file size was too large to upload)
         * result : This folder contains the results of the each analysis
     * figure
     Figures which were used in the paper
     * genome
-    Genome data 
+    Genome data (the file size of "Gm198_HCDB_190207.fil.snp.remHet.MS0.95_bi_MQ20_DP3-1000.MAF0.025.imputed.v2.chrnum.vcf.gz" was too large to upload)
     * supple
     Supplementary data in the paper
 
