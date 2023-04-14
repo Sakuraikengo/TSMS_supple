@@ -1,3 +1,5 @@
+library(stringr)
+
 ########## 2.1.0.spectralValueSel ############
 GetMsData <- function(plotCsv, refBoardValue, VIsName) {
   plotMat0 <- as.matrix(read.csv(plotCsv, header = T, row.names = 1))
@@ -102,7 +104,7 @@ MakeCorMat <- function(cov_file, index_names) {
   return(cor_value)
 }
 
-####### 3.1.0.MTMprediction ###########
+####### 3.2.0.MTMprediction ###########
 CsvToDf <- function(baseCsv, csvRowInd, csvColInd) {
   corMat <- as.matrix(baseCsv)
   colnames(corMat) <- csvColInd

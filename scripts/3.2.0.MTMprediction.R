@@ -1,4 +1,4 @@
-machine <- "drone"
+# machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
 
@@ -15,12 +15,12 @@ library(date)
 library(ggplot2)
 library(ggsci)
 library(doParallel)
-source("R/1.functionCode.R")
-source("R/1.MTM_2.R")
+source("scripts/1.functionCode.R")
+source("scripts/1.MTM_2.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
-mtmFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.1.0.MTMprediction"
+mtmFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.2.0.MTMprediction"
 if (!file.exists(mtmFolder)) {
   dir.create(mtmFolder)
 }
@@ -38,7 +38,7 @@ if (file.exists(seedIndCsv)) {
 # set the condition
 condition <- c("W1", "W2", "W3", "W4")
 
-# data folder
+# make the data folder
 phenoFolder <- "2019_M100_Xacti4eyeCamera_Images/result/2.1.1.dataFolder"
 
 # read the amat
@@ -57,6 +57,7 @@ resultAll <- foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot
   # the_day <- dataWeek[[4]]
   the_day <- dataWeek[[dayInd]]
   
+  # read the phenotypic data and extract the data
   dataFrame0 <- read.csv(paste0(phenoFolder, "/", the_day, "_medianPheno.csv"),
                          header = TRUE, row.names = 1)
   df <- dataFrame0[, c("variety", "treatment", "flower", "plantArea", "dryWeight", 
@@ -72,13 +73,13 @@ resultAll <- foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot
                "NDRE", 
                "NDI", 
                "RTVI")]
-  # df[df$plot_ID == "Houjaku Kuwazu", "plot_ID"] <- "HOUJAKU_KUWAZU"
   
-  # make the box to input the result
+  # make the matrix to input the result
   corEachDaySeed <- matrix(NA, nrow = length(condition), ncol = length(seedInd))
   rownames(corEachDaySeed) <- condition
   colnames(corEachDaySeed) <- seedInd
   
+  # set the treatments and traits
   n_treatment <- length(unique(df$treatment))
   name_treatment <- c("W1", "W2", "W3", "W4")
   name_trait <- colnames(df[, c(4:ncol(df))])
@@ -90,18 +91,17 @@ resultAll <- foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot
   # head(phenodat)
   
   
-  #' # 3. Estimate genotypic values with MTM
-  #' Estimate genotypic values for each condition,
-  #' ohterwise the variance-covariance matrix to estimate will be too large
+  # 3. Estimate genotypic values with MTM
+  # Estimate genotypic values for each condition,
   new_folder <- paste0(mtmFolder, "/", the_year, the_day)
   if (!file.exists(new_folder)) {
     dir.create(new_folder)
   }
-  # pdf('2.1.5.1.MTMnoFixedEffect/diagnosis.pdf')
+  
   for (treatment_i in name_treatment) {
     # treatment_i <- name_treatment[1]
     
-    # choose data of the target treatment
+    # extract the data of the target treatment
     phenodat_i <- phenodat[phenodat$treatment == treatment_i, ]
     phenodat_i <- na.omit(phenodat_i)
     
@@ -147,28 +147,28 @@ resultAll <- foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot
         MTM_Y_Na <- MTM_Y
         MTM_Y_Na[crossCvInd == times, "dryWeight"] <- NA
         
-        # delete the .dat files
-        datFiles <- list.files(new_folder, pattern = ".dat", full.names = T)
-        if (length(datFiles) != 0) {
-          file.remove(datFiles)
-        }
-        
-        # estimation (for RMarkdown)
+        # # delete the .dat files
+        # datFiles <- list.files(new_folder, pattern = ".dat", full.names = T)
+        # if (length(datFiles) != 0) {
+        #   file.remove(datFiles)
+        # }
+        # 
+        # estimation
         MTM_output <- capture.output(
           res_MTM <- MTM_2(Y = MTM_Y_Na, K = MTM_K, resCov = MTM_resCov,
-                           nIter = 120, burnIn = 20, thin = 2,
-                           saveAt = paste0(new_folder, "/", treatment_i, '_'))
+                           nIter = 12, burnIn = 2, thin = 2,
+                           saveAt = paste0(new_folder, "/", treatment_i, '_', seedIndEach, "_", times, "_"))
         )
         
         # correlation between prediction & true value
         predictionData[crossCvInd == times] <- res_MTM$YHat[, "dryWeight"][crossCvInd == times]
       }
-      corMTM[seedIndEach] <- cor(exp(predictionData), exp(dryWeight))
+      corMTM[seedIndEach] <- cor(predictionData, dryWeight)
       
-      xlim <- ylim <- range(exp(predictionData), exp(dryWeight))
+      xlim <- ylim <- range(predictionData, dryWeight)
       png(paste0(new_folder, "/predictionPlot", 
                  treatment_i, "_", seedIndEach, ".png"))
-      plot(exp(dryWeight), exp(predictionData), 
+      plot(dryWeight, predictionData, 
            main = paste0(" MTM prediction ", treatment_i), 
            xlim = xlim, ylim = ylim)
       abline(0, 1, col = 2, lty = 2)
@@ -213,10 +213,10 @@ resultMTlong <- cbind(resultMTlong0, "MT")
 colnames(resultMTlong) <- c("value", "week", "treatment", "model")
 write.csv(resultMTlong, paste0(mtmFolder, "/resultLongDf.csv"))
 
-resultCsvST <- "2019_M100_Xacti4eyeCamera_Images/result/3.2.1.kernelPredictionWithFlowerDate/resultLongDf.csv"
+resultCsvST <- "2019_M100_Xacti4eyeCamera_Images/result/3.1.1.kernelPrediction/resultLongDf.csv"
 resultST0 <- read.csv(resultCsvST, header = T, row.names = 1)
-resultSTlong0 <- resultST0[resultST0$colInd == "correlation" & resultST0$rowInd == "G", ]
-resultSTlong <- data.frame(resultSTlong0$value, resultSTlong0$day, resultSTlong0$condition, "G")
+resultSTlong0 <- resultST0[resultST0$colInd == "Correlation" & resultST0$rowInd == "G", ]
+resultSTlong <- data.frame(resultSTlong0$value, resultSTlong0$week, resultSTlong0$condition, "G")
 colnames(resultSTlong) <- c("value", "week", "treatment", "model")
 
 resultAllLong <- rbind(resultMTlong, resultSTlong)
@@ -236,25 +236,3 @@ png(paste0(mtmFolder, "/predictResultLine.png"),
 print(g)
 dev.off()
 
-# the gain of MT model (week2)
-gain2 <- resultMTlong[resultMTlong$week == "week2", "value"] / resultSTlong[resultSTlong$week == "week2", "value"]
-
-# the gain of MT model (week2-6)
-gain0 <- resultMTlong$value / resultSTlong$value
-gain <- mean(gain0[5:length(gain0)])
-gainEach <- tapply(gain0, INDEX = resultSTlong$treatment, mean)
-
-# mean of each treatment (G model)
-tapply(resultSTlong$value, INDEX = resultSTlong$treatment, mean)
-
-# from week1 to week2 what % up
-round(mean(resultMTlong$value[5:8] / resultMTlong$value[1:4]), 2)
-
-maxLatter <- tapply(resultMTlong$value[13:24], INDEX = resultMTlong$treatment[13:24], max)
-maxFormer <- tapply(resultMTlong$value[1:12], INDEX = resultMTlong$treatment[1:12], max)
-gain1 <- round(mean(maxLatter / maxFormer), 2)
-
-# from week1 to week3 what % up
-round(mean(resultMTlong[resultMTlong$week == "week3", "value"] / resultMTlong[resultMTlong$week == "week1", "value"]), 2)
-# from week4 to week6 what % up
-round(mean(resultMTlong[resultMTlong$week == "week6", "value"] / resultMTlong[resultMTlong$week == "week3", "value"]), 2)

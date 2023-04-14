@@ -1,7 +1,7 @@
-machine <- "drone"
+# machine <- "drone"
 the_year <- "2019"
 data_day <- c("0802", "0810", "0817", "0824", "0831", "0903")
-source("R/1.functionCode.R")
+source("scripts/1.functionCode.R")
 
 options(stringsAsFactors = FALSE)
 

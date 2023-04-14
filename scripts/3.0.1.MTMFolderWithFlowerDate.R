@@ -1,4 +1,4 @@
-machine <- "drone"
+# machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
 
@@ -13,8 +13,8 @@ library(date)
 library(ggplot2)
 library(ggsci)
 library(doParallel)
-source("R/1.functionCode.R")
-source("R/1.MTM_2.R")
+source("scripts/1.functionCode.R")
+source("scripts/1.MTM_2.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
@@ -227,5 +227,5 @@ for (conditionEach in condition) {
 dev.off()
 par(opar)
 
-# from week4 to week5 what % increase
-mean(gCorDryWeightArray[5, 2:6, 1:3] / gCorDryWeightArray[4, 2:6, 1:3]) 
+# # from week4 to week5 what % increase
+# mean(gCorDryWeightArray[5, 2:6, 1:3] / gCorDryWeightArray[4, 2:6, 1:3]) 

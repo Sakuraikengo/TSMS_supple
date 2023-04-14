@@ -1,4 +1,4 @@
-machine <- "drone"
+# machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
 
@@ -13,7 +13,7 @@ library(date)
 library(ggplot2)
 library(ggsci)
 library(doParallel)
-source("R/1.functionCode.R")
+source("scripts/1.functionCode.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
@@ -28,7 +28,6 @@ phenoFolder <- "2019_M100_Xacti4eyeCamera_Images/result/2.1.1.dataFolder"
 # read the amat
 amat0 <- as.matrix(read.csv('genome/amat173583SNP.csv', 
                             row.names = 1, header = T))
-# amat <- as.matrix(amat0)
 rownames(amat0)[rownames(amat0) == "HOUJAKU_KUWAZU"] <- "Houjaku Kuwazu"
 colnames(amat0)[colnames(amat0) == "HOUJAKU_KUWAZU"] <- "Houjaku Kuwazu"
 colnames(amat0)[colnames(amat0) == "X5002T"] <- "5002T"
@@ -41,6 +40,7 @@ foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
   # dayInd <- 1
   the_day <- dataWeek[dayInd]
   
+  # read the phenotypic data
   dataFrame0 <- read.csv(paste0(phenoFolder, "/", the_day, "_medianPheno.csv"),
                          header = TRUE, row.names = 1)
   df <- dataFrame0[, c("variety", "treatment", "dryWeight", "plantArea", 
@@ -51,7 +51,7 @@ foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
                        "RTVI")]
   df <- na.omit(df)
   
-  
+  # set the treatments and traits
   n_treatment <- length(unique(df$treatment))
   name_treatment <- c("W1", "W2", "W3", "W4")
   name_trait <- colnames(df[, c(3:ncol(df))])
@@ -61,9 +61,8 @@ foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
   colnames(phenodat)[c(1, 2)] <- c("line", "treatment")
   
   
-  #' # 3. Estimate genotypic values with MTM
-  #' Estimate genotypic values for each condition,
-  #' ohterwise the variance-covariance matrix to estimate will be too large
+  # 3. Estimate genotypic values with MTM
+  # Estimate genotypic values for each condition,
   new_folder <- paste0(mtmFolder, "/", the_year, the_day)
   if (!file.exists(new_folder)) {
     dir.create(new_folder)
@@ -71,7 +70,7 @@ foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot")) %dopar% {
   for (treatment_i in name_treatment) {
     # treatment_i <- name_treatment[3]
     
-    # choose data of the target treatment
+    # extract the data of the target treatment
     phenodat_i <- phenodat[phenodat$treatment == treatment_i, ]
     phenodat_i <- na.omit(phenodat_i)
     
@@ -212,9 +211,3 @@ for (conditionEach in condition) {
 }
 dev.off()
 par(opar)
-
-# from week4 to week5 what % increase
-mean(gCorDryWeightArray[5, 2:6, 1:3] / gCorDryWeightArray[4, 2:6, 1:3]) 
-
-
-

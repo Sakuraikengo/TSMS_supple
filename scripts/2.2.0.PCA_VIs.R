@@ -1,21 +1,18 @@
-#####prcomp######
-# do PCA for the each day
-machine <- "drone"
+# machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
 
 #' # 0. Read packages
 library(BGLR)
 library(doParallel)
-# library(gaston)
-source("R/1.functionCode.R")
-options(stringsAsFactors = FALSE)
 library(lme4)
 library(RAINBOWR)
 library(stringr)
 library(psych)
 library(ggplot2)
 library(corrplot)
+source("scripts/1.functionCode.R")
+options(stringsAsFactors = FALSE)
 
 # make the save folder
 PCA_folder <- "2019_M100_Xacti4eyeCamera_Images/result/2.2.0.PCA_VIs"
@@ -33,6 +30,7 @@ rownames(amat0)[rownames(amat0) == "HOUJAKU_KUWAZU"] <- "Houjaku Kuwazu"
 # data folder
 phenoFolder <- "2019_M100_Xacti4eyeCamera_Images/result/2.1.1.dataFolder"
 
+#### do the PCA ####
 # matrix to input the PCA result (Cumulative proportion)
 matCP <- matrix(NA, nrow = length(dataWeek), ncol = 5)
 rownames(matCP) <- dataWeek
@@ -61,7 +59,6 @@ for (dayInd in 1:length(dataWeek)) {
   for (eachCondition in unique(dataAll$treatment)) {
     # eachCondition <- unique(dataAll$treatment)[1]
     dataEach <- dataAll[dataAll$treatment == eachCondition, ]
-    dim(dataEach)
     msEach <- dataEach[, 5:ncol(dataEach)]
     
     resEach <- prcomp(msEach, scale = T)
@@ -175,9 +172,8 @@ for (dayInd in 1:length(dataWeek)) {
 matCP <- round(matCP, 2)
 write.csv(x = matCP, file = paste0(PCA_folder, "/cumulativeProportion.csv"))
 
-arrayCor
 
-###### calvulate genomic heritability #######  
+###### calculating genomic heritability and phenotypic correlation #######  
 correlation_folder <- paste0(PCA_folder, "/df_dry_weight_correlation")
 heritability_folder <- paste0(PCA_folder, "/df_heritability")
 
@@ -212,7 +208,7 @@ foreach(dayInd = 1:length(dataWeek)) %do% {
   phenoData <- dataAll[, 3:ncol(dataAll)]
   msData <- dataAll[, 5:ncol(dataAll)]
   
-  # make the mat to input the genomic heritability
+  # make the matrix to input the genomic heritability
   condition <- c("W1", "W2", "W3", "W4")
   h2Mat <- matrix(NA, nrow = length(condition), ncol = ncol(phenoData))
   rownames(h2Mat) <- condition
@@ -228,7 +224,7 @@ foreach(dayInd = 1:length(dataWeek)) %do% {
     rownames(phenoDataEachConditionScaled) <- dataEachCondition$variety
     amatEach <- amat0[dataEachCondition$variety, dataEachCondition$variety]
     
-    # make the correlation between dryweight
+    # calculating the phenotypic correlation between dryweight
     write.csv(cor(phenoDataEachConditionScaled), 
               paste0(correlation_folder, "/", the_day, "_dryWeightCor", conditionEach, ".csv"))
     
@@ -457,22 +453,22 @@ g <- ggplot(phenoAll, aes(x = treatment, y = dryWeight, fill = treatment)) +
 print(g)
 dev.off()
 
-# t.test
-phenoAll$treatment <- as.factor(phenoAll$treatment)
-anova(lm(phenoAll$dryWeight~phenoAll$treatment))
-
-t.test(phenoAll[phenoAll$treatment == "W1", "dryWeight"], 
-       phenoAll[phenoAll$treatment == "W2", "dryWeight"])$p.value * 6
-t.test(phenoAll[phenoAll$treatment == "W1", "dryWeight"], 
-       phenoAll[phenoAll$treatment == "W3", "dryWeight"])$p.value * 6
-t.test(phenoAll[phenoAll$treatment == "W1", "dryWeight"], 
-       phenoAll[phenoAll$treatment == "W4", "dryWeight"])$p.value * 6
-t.test(phenoAll[phenoAll$treatment == "W2", "dryWeight"], 
-       phenoAll[phenoAll$treatment == "W3", "dryWeight"])$p.value * 6
-t.test(phenoAll[phenoAll$treatment == "W2", "dryWeight"], 
-       phenoAll[phenoAll$treatment == "W4", "dryWeight"])$p.value * 6
-t.test(phenoAll[phenoAll$treatment == "W3", "dryWeight"], 
-       phenoAll[phenoAll$treatment == "W4", "dryWeight"])$p.value * 6
+# # t.test
+# phenoAll$treatment <- as.factor(phenoAll$treatment)
+# anova(lm(phenoAll$dryWeight~phenoAll$treatment))
+# 
+# t.test(phenoAll[phenoAll$treatment == "W1", "dryWeight"], 
+#        phenoAll[phenoAll$treatment == "W2", "dryWeight"])$p.value * 6
+# t.test(phenoAll[phenoAll$treatment == "W1", "dryWeight"], 
+#        phenoAll[phenoAll$treatment == "W3", "dryWeight"])$p.value * 6
+# t.test(phenoAll[phenoAll$treatment == "W1", "dryWeight"], 
+#        phenoAll[phenoAll$treatment == "W4", "dryWeight"])$p.value * 6
+# t.test(phenoAll[phenoAll$treatment == "W2", "dryWeight"], 
+#        phenoAll[phenoAll$treatment == "W3", "dryWeight"])$p.value * 6
+# t.test(phenoAll[phenoAll$treatment == "W2", "dryWeight"], 
+#        phenoAll[phenoAll$treatment == "W4", "dryWeight"])$p.value * 6
+# t.test(phenoAll[phenoAll$treatment == "W3", "dryWeight"], 
+#        phenoAll[phenoAll$treatment == "W4", "dryWeight"])$p.value * 6
 
 
 # calculate the MEAN and SE

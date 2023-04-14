@@ -1,4 +1,4 @@
-machine <- "drone"
+# machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
 
@@ -11,11 +11,11 @@ library(stringr)
 library(ggplot2)
 library(ggsci)
 
-source("R/1.functionCode.R")
+source("scripts/1.functionCode.R")
 options(stringsAsFactors = FALSE)
 
 # make the folder
-kernelFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.2.0.kernelPrediction"
+kernelFolder <- "2019_M100_Xacti4eyeCamera_Images/result/3.1.1.kernelPrediction"
 if (!file.exists(kernelFolder)) {
   dir.create(kernelFolder)
 }
@@ -26,6 +26,10 @@ phenoFolder <- "2019_M100_Xacti4eyeCamera_Images/result/2.1.1.dataFolder"
 # set the condition
 condition <- c("W1", "W2", "W3", "W4")
 
+# define the model "G" is a genomic prediction model
+# "MS" is a kernel prediction model using MS kernel
+# "G+MS" is a multi-kernel prediction model using G and MS kernel
+# "G+Field" is a multi-kernel prediction model using G and Field kernel
 kernelName <- c("G", "MS", "G+MS", "G+Field")
 resultIndex <- c("Correlation", "R2", "RMSE")
 
@@ -92,8 +96,6 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
   phenoDataAll0$plantArea <- log(phenoDataAll0$plantArea)
   
   foreach(conditionEach = condition, .packages = c("BGLR", "RAINBOWR", "stringr")) %dopar% { 
-    # for (conditionEach in condition) {
-    
     # select the training and test condition data
     phenoDataAll <- phenoDataAll0[phenoDataAll0$treatment == conditionEach, ]
     dim(phenoDataAll)
@@ -102,7 +104,6 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
     dryWeight0 <- phenoDataAll[, "dryWeight"]
     dryWeight <- scale(phenoDataAll[, "dryWeight"])
     names(dryWeight) <- phenoDataAll$variety
-    # image(tcrossprod(scale(dryWeight)))
     
     # make MS data kernel
     phenoMs <- phenoDataAll[, 6:ncol(phenoDataAll)]
@@ -205,8 +206,8 @@ allResult <- foreach(dayInd = 1:length(dataWeek), .packages = c("BGLR", "RAINBOW
           }
         }
         resEM3$weights
-        predictData <- exp(predictionDataRAINBOW)
-        obsData <- exp(dryWeight)
+        predictData <- (predictionDataRAINBOW)
+        obsData <- (dryWeight)
         # calculate the R2 and RMSE
         correlation <- cor(obsData, predictData)
         R2 <- 1 - sum((obsData - predictData) ^ 2) / sum((obsData - mean(obsData)) ^ 2)
@@ -356,17 +357,3 @@ png(paste0(kernelFolder, "/resultLineRMSESel.png"),
     height = 1440, width = 1440, res = 216)
 print(ggLineListSel[[3]])
 dev.off()
-
-
-result <- allDayResultDfSel[allDayResultDfSel$index == "Correlation", ]
-resultMax <- tapply(result$value, INDEX = result$condition, max)
-mean(resultMax[c(1, 4)]) / mean(resultMax[c(2, 3)])
-
-valueWeek2_G <- result[result$Model == "G" & result$Week == 2, ]$value
-valueWeek2_GMS <- result[result$Model == "G+MS" & result$Week == 2, ]$value
-mean(valueWeek2_GMS / valueWeek2_G)
-
-value_MS <- result[result$Model == "MS" & result$Week != 1, ]$value
-value_GMS <- result[result$Model == "G+MS" & result$Week != 1, ]$value
-mean(value_GMS / value_MS)
-
