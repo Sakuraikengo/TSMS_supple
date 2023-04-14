@@ -4,7 +4,8 @@ Because genome file and raw data of MS data were too large to upload, we can't r
 * 2.0.makeAmat.R
 * 2.1.0.spectralValueSel.R
 * 2.1.1.dataFolder.R
-Please run from the ""
+
+Please run from the "2.2.0.PCA_VIs.R"
 
 ---
 
