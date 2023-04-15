@@ -147,16 +147,10 @@ resultAll <- foreach(dayInd = 1:length(dataWeek), .packages = c("MTM", "corrplot
         MTM_Y_Na <- MTM_Y
         MTM_Y_Na[crossCvInd == times, "dryWeight"] <- NA
         
-        # # delete the .dat files
-        # datFiles <- list.files(new_folder, pattern = ".dat", full.names = T)
-        # if (length(datFiles) != 0) {
-        #   file.remove(datFiles)
-        # }
-        # 
         # estimation
         MTM_output <- capture.output(
           res_MTM <- MTM_2(Y = MTM_Y_Na, K = MTM_K, resCov = MTM_resCov,
-                           nIter = 12, burnIn = 2, thin = 2,
+                           nIter = 12000, burnIn = 2000, thin = 20,
                            saveAt = paste0(new_folder, "/", treatment_i, '_', seedIndEach, "_", times, "_"))
         )
         

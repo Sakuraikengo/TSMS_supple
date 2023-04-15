@@ -1,6 +1,6 @@
 {
     "dialog-state": {
-        "query": "data_pictures",
+        "query": "nIter",
         "path": "/scripts",
         "regex": false,
         "caseSensitive": false,
@@ -9,7 +9,7 @@
         "useGitGrep": false,
         "excludeGitIgnore": true,
         "excludeFilePatterns": [],
-        "resultsCount": 1,
+        "resultsCount": 12,
         "errorCount": 0,
         "replaceErrors": "",
         "projectRelative": true

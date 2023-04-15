@@ -1,4 +1,4 @@
-setwd("H:/TSMS_supple")
+
 # machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
@@ -154,24 +154,13 @@ if (length(list.files(mtmFolder)) < 7) {
           MTM_Y_Na <- MTM_Y
           MTM_Y_Na[crossCvInd == times, "dryWeight"] <- NA
           
-          # # delete the .dat files
-          # datFiles <- list.files(new_folder, pattern = ".dat", full.names = T)
-          # if (length(datFiles) != 0) {
-          #   file.remove(datFiles)
-          # }
-          # 
-          # # estimation
-          # MTM_output <- capture.output(
-          #   res_MTM <- MTM_2(XF = MTM_XF, Y = MTM_Y_Na, K = MTM_K, resCov = MTM_resCov,
-          #                    nIter = 48000, burnIn = 8000, thin = 40,
-          #                    saveAt = paste0(new_folder, "/", treatment_i, '_', seedIndEach, "_", times, "_"))
-          # )
           # estimation
           MTM_output <- capture.output(
             res_MTM <- MTM_2(XF = MTM_XF, Y = MTM_Y_Na, K = MTM_K, resCov = MTM_resCov,
-                             nIter = 6, burnIn = 2, thin = 2,
+                             nIter = 48000, burnIn = 8000, thin = 40,
                              saveAt = paste0(new_folder, "/", treatment_i, '_', seedIndEach, "_", times, "_"))
           )
+          
           # put into the predicted value
           if (is.null(MTM_XF)) {
             predictEach <- (res_MTM$mu + res_MTM$K[[1]]$U)[, 1]

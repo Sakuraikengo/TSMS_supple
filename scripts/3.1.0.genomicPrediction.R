@@ -1,4 +1,4 @@
-setwd("H:/TSMS_supple")
+
 # machine <- "drone"
 the_year <- "2019"
 dataWeek <- c("week1", "week2", "week3", "week4", "week5", "week6")
